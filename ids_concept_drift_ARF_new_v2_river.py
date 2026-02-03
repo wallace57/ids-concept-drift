@@ -29,17 +29,26 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score, f1_score
 
 from river import forest
-from river.drift import ADWIN, DDM, PageHinkley
 
-RANDOM_SEED = 42
-np.random.seed(RANDOM_SEED)
+# ---- Drift detectors (River) ----
+# River version khác nhau có thể đặt DDM ở path khác nhau -> import "robust"
+from river.drift import ADWIN, PageHinkley
+
+try:
+    # Nhiều version River mới: DDM nằm trong drift.binary
+    from river.drift.binary import DDM
+except Exception:
+    # Một số version cũ: DDM nằm trực tiếp trong river.drift
+    from river.drift import DDM  # type: ignore
+
+# KSWIN / HDDM_A / HDDM_W thường nằm trực tiếp trong river.drift
+from river.drift import KSWIN, HDDM_A, HDDM_W
 
 
 # -----------------------------
 # 1) Load + preprocess NSL-KDD
 # -----------------------------
 def load_nsl_kdd(train_path: str, test_path: str):
-    # NSL-KDD format: 41 features + label + difficulty = 43 columns
     col_names = [
         "duration", "protocol_type", "service", "flag", "src_bytes", "dst_bytes",
         "land", "wrong_fragment", "urgent", "hot", "num_failed_logins", "logged_in",
