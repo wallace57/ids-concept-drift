@@ -4,6 +4,6 @@
 - notebook 03 phản ánh yêu cầu bài tập 03 trong slide
 
 # Reference
-https://inseclab.uit.edu.vn/nsl-kdd-goc-nhin-chi-tiet-ve-tap-du-lieu-huan-luyen-cho-cac-ids/
-https://github.com/thinline72/nsl-kdd
+https://inseclab.uit.edu.vn/nsl-kdd-goc-nhin-chi-tiet-ve-tap-du-lieu-huan-luyen-cho-cac-ids/ <br>
+https://github.com/thinline72/nsl-kdd <br>
 https://www.kaggle.com/code/mihirs16/arf-fy-project
