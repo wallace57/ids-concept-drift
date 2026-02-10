@@ -3,7 +3,6 @@ import random
 from dataclasses import dataclass
 from pathlib import Path
 import argparse
-import argparse
 from typing import List, Optional, Tuple
 
 import numpy as np
@@ -173,49 +172,34 @@ def build_preprocessor(train_df: pd.DataFrame) -> ColumnTransformer:
     return ColumnTransformer(transformers=transformers, remainder="drop")
 
 
-def create_tasks(
-    X_train: torch.Tensor,
-    y_train: torch.Tensor,
-    X_test: torch.Tensor,
-    y_test: torch.Tensor,
-    n_tasks: int = 5,
-    period_size: int = 8000,
-    test_mix_schedule: List[float] = None,
-    use_full_data: bool = False,
+def create_tasks_by_attack(
+    X: torch.Tensor,
+    y: torch.Tensor,
 ) -> List[TaskSplit]:
-    if test_mix_schedule is None:
-        test_mix_schedule = np.linspace(0.0, 0.9, n_tasks).tolist()
-    assert len(test_mix_schedule) == n_tasks
+    """
+    Create tasks by progressively introducing new attack categories.
+    This simulates IDS concept drift: each task sees additional attacks,
+    so a static baseline forgets the earlier ones while replay should help.
+    """
+    TASK_SCENARIOS = [
+        ["Normal"],
+        ["DoS"],
+        ["Probe"],
+        ["R2L"],
+        ["U2R"],
+    ]
 
     tasks: List[TaskSplit] = []
-    n_train = X_train.shape[0]
-    n_test = X_test.shape[0]
-
-    for idx in range(n_tasks):
-        p_test = test_mix_schedule[idx]
-        if use_full_data:
-            n_from_test = int(np.floor(n_test * p_test))
-            test_perm = torch.randperm(n_test)[:n_from_test] if n_from_test > 0 else torch.empty(0, dtype=torch.long)
-            if n_from_test > 0:
-                X_period = torch.cat([X_train, X_test[test_perm]], dim=0)
-                y_period = torch.cat([y_train, y_test[test_perm]], dim=0)
-            else:
-                X_period = X_train
-                y_period = y_train
-        else:
-            n_from_test = int(period_size * p_test)
-            n_from_train = period_size - n_from_test
-            train_idx = np.random.choice(n_train, size=n_from_train, replace=(n_from_train > n_train))
-            test_idx = np.random.choice(n_test, size=n_from_test, replace=(n_from_test > n_test))
-            X_period = torch.cat([X_train[train_idx], X_test[test_idx]], dim=0)
-            y_period = torch.cat([y_train[train_idx], y_test[test_idx]], dim=0)
-
-        perm = torch.randperm(X_period.shape[0])
-        X_period = X_period[perm]
-        y_period = y_period[perm]
-
+    for idx, labels in enumerate(TASK_SCENARIOS):
+        label_ids = torch.tensor([LABEL_TO_ID[l] for l in labels], dtype=y.dtype, device=y.device)
+        mask = torch.isin(y, label_ids)
+        X_subset = X[mask]
+        y_subset = y[mask]
+        perm = torch.randperm(X_subset.shape[0])
+        X_subset = X_subset[perm]
+        y_subset = y_subset[perm]
         task_name = f"Task_{idx + 1}"
-        tasks.append(TaskSplit(name=task_name, X=X_period, y=y_period))
+        tasks.append(TaskSplit(name=task_name, X=X_subset, y=y_subset))
 
     return tasks
 
@@ -354,16 +338,7 @@ def main() -> None:
         raise FileNotFoundError("NSL-KDD data files missing in data/; run download_nsl_kdd.py first.")
 
     X_train, y_train, X_test, y_test = load_kdd(train_path, test_path)
-    tasks = create_tasks(
-        X_train,
-        y_train,
-        X_test,
-        y_test,
-        n_tasks=args.tasks,
-        period_size=args.period_size,
-        test_mix_schedule=None,
-        use_full_data=args.full_data,
-    )
+    tasks = create_tasks_by_attack(X_train, y_train)
     full_test_task = TaskSplit("Test_Full", X_test, y_test)
 
     baseline_metrics = run_continual_training(
