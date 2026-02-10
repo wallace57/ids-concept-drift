@@ -213,6 +213,7 @@ def create_tasks_by_attack(
         y_subset = y_subset[perm]
         task_name = f"Task_{idx + 1}"
         tasks.append(TaskSplit(name=task_name, X=X_subset, y=y_subset))
+        print(f"[Task creation] {task_name}: {len(X_subset)} samples ({', '.join(labels)})")
 
     return tasks
 
@@ -357,6 +358,7 @@ def main() -> None:
         raise FileNotFoundError("NSL-KDD data files missing in data/; run download_nsl_kdd.py first.")
 
     X_train, y_train, X_test, y_test = load_kdd(train_path, test_path)
+    print(f"[Data] Train samples: {X_train.shape[0]}, Test samples: {X_test.shape[0]}, Features: {X_train.shape[1]}")
     tasks = create_tasks_by_attack(X_train, y_train)
     full_test_task = TaskSplit("Test_Full", X_test, y_test)
 
