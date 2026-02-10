@@ -1,5 +1,6 @@
 ﻿"""Continual learning runner with replay buffer for NSL-KDD."""
 import random
+from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 import argparse
@@ -56,37 +57,49 @@ class TaskSplit:
 
 
 class ReplayBuffer:
-    """Reservoir sampling buffer storing past examples."""
+    """Class-balanced reservoir buffer: maintains per-class reservoirs."""
 
     def __init__(self, max_size: int):
         self.max_size = max_size
-        self.buffer: List[Tuple[torch.Tensor, torch.Tensor]] = []
-        self.num_seen = 0
+        self.buffers: dict[int, List[Tuple[torch.Tensor, torch.Tensor]]] = defaultdict(list)
+        self.class_counts: dict[int, int] = defaultdict(int)
 
     def add(self, X: torch.Tensor, y: torch.Tensor) -> None:
-        """Add samples one-by-one using reservoir sampling."""
         assert X.shape[0] == y.shape[0]
         for xi, yi in zip(X, y):
-            self.num_seen += 1
+            label = int(yi.item())
+            buf = self.buffers[label]
+            self.class_counts[label] += 1
+            count = self.class_counts[label]
             entry = (xi.detach().cpu(), yi.detach().cpu())
-            if len(self.buffer) < self.max_size:
-                self.buffer.append(entry)
+            if len(buf) < self.max_size:
+                buf.append(entry)
             else:
-                idx = random.randrange(self.num_seen)
+                idx = random.randrange(count)
                 if idx < self.max_size:
-                    self.buffer[idx] = entry
+                    buf[idx] = entry
 
     def sample(self, k: int) -> Tuple[torch.Tensor, torch.Tensor]:
-        if len(self.buffer) == 0 or k <= 0:
+        classes = [label for label, buf in self.buffers.items() if buf]
+        if not classes or k <= 0:
             return torch.empty(0).to(DEVICE), torch.empty(0).to(DEVICE)
-        k = min(k, len(self.buffer))
-        indices = random.sample(range(len(self.buffer)), k)
-        X_samples = torch.stack([self.buffer[i][0] for i in indices]).to(DEVICE)
-        y_samples = torch.stack([self.buffer[i][1] for i in indices]).to(DEVICE)
-        return X_samples, y_samples
+        per_class = max(1, k // len(classes))
+        remainder = k - per_class * len(classes)
+        xs, ys = [], []
+        for idx, label in enumerate(classes):
+            buf = self.buffers[label]
+            take = min(per_class + (1 if idx < remainder else 0), len(buf))
+            if take == 0:
+                continue
+            samples = random.sample(buf, take)
+            xs.extend([s[0] for s in samples])
+            ys.extend([s[1] for s in samples])
+        if not xs:
+            return torch.empty(0).to(DEVICE), torch.empty(0).to(DEVICE)
+        return torch.stack(xs).to(DEVICE), torch.stack(ys).to(DEVICE)
 
     def __len__(self) -> int:
-        return len(self.buffer)
+        return sum(len(buf) for buf in self.buffers.values())
 
 
 class ContinualMLP(nn.Module):
@@ -287,7 +300,6 @@ def run_continual_training(
     num_classes = len(LABEL_TO_ID)
     model = ContinualMLP(input_dim=input_dim, hidden_dim=256, num_classes=num_classes).to(DEVICE)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
-    criterion = nn.CrossEntropyLoss()
     buffer = ReplayBuffer(max_size=5000) if use_replay else None
 
     T = len(tasks)
@@ -297,9 +309,16 @@ def run_continual_training(
 
     for t, task in enumerate(tasks):
         print(f"\nTraining {task.name} (Task {t + 1}/{T}) - {'with replay' if use_replay else 'baseline'}")
+        present_counts = torch.bincount(task.y, minlength=num_classes).float()
+        total = max(present_counts.sum(), 1.0)
+        weights = torch.zeros(num_classes, dtype=torch.float32)
+        mask = present_counts > 0
+        weights[mask] = total / present_counts[mask]
+        criterion = nn.CrossEntropyLoss(weight=weights.to(DEVICE))
         train_on_task(model, optimizer, criterion, task, buffer, replay_ratio=replay_ratio)
-        for k, eval_task in enumerate(tasks):
-            acc, _ = evaluate_model(model, eval_task)
+        for k in range(min(t + 1, T)):
+            seen_task = tasks[k]
+            acc, _ = evaluate_model(model, seen_task)
             acc_matrix[t][k] = acc
         per_task_metrics.append((task.name, acc_matrix[t][t]))
         print(f"  -> {task.name} accuracy: {acc_matrix[t][t]:.4f}")
