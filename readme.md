@@ -73,21 +73,16 @@ pip install -r requirements.txt
 2. Download 2 files:
    - `KDDTrain+.txt`
    - `KDDTest+.txt`
-3. Đặt vào folder project
+3. Đặt vào folder `data/`
 
-**Option 2: Download bằng script**
-```python
-import urllib.request
-
-# URLs
-train_url = "https://raw.githubusercontent.com/defcom17/NSL_KDD/master/KDDTrain+.txt"
-test_url = "https://raw.githubusercontent.com/defcom17/NSL_KDD/master/KDDTest+.txt"
-
-# Download
-urllib.request.urlretrieve(train_url, "KDDTrain+.txt")
-urllib.request.urlretrieve(test_url, "KDDTest+.txt")
-print("✅ Downloaded NSL-KDD dataset")
+**Option 2: Download bằng script (khuyến nghị)**
+```bash
+python scripts/download_nsl_kdd.py
 ```
+Script sẽ:
+- Tải `KDDTrain+.txt` và `KDDTest+.txt` từ [GitHub NSL-KDD](https://github.com/thinline72/nsl-kdd/tree/master/NSL_KDD_Dataset)
+- Lưu vào folder `data/`
+- Tự động tạo folder `data/` nếu chưa có
 
 ### Bước 5: Chạy code
 
@@ -122,6 +117,9 @@ ids-concept-drift/
 ├── requirements.txt                        # Dependencies cơ bản
 ├── pyproject.toml                          # Project config
 ├── README.md                               # Documentation
+│
+├── scripts/
+│   └── download_nsl_kdd.py                # Script tải NSL-KDD dataset vào data/
 │
 ├── data/
 │   ├── KDDTrain+.txt                      # Training data (~125K samples)
@@ -327,9 +325,9 @@ pip install scikit-multiflow
 ```
 
 ### Lỗi 2: File not found (KDDTrain+.txt)
-- Đảm bảo dataset được đặt trong folder `data/`
-- Download dataset theo hướng dẫn Bước 4
-- Hoặc sử dụng phiên bản cơ bản để tự động tạo sample data
+- Chạy script tải dataset: `python scripts/download_nsl_kdd.py`
+- Hoặc download manual theo hướng dẫn Bước 4, đặt file vào folder `data/`
+- Phiên bản cơ bản có thể tự động tạo sample data nếu không có dataset
 
 ### Lỗi 3: scikit-multiflow installation failed
 **Giải pháp**: Sử dụng phiên bản River thay thế
