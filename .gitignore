@@ -151,3 +151,10 @@ cython_debug/
 # results/
 # *.png
 # *.csv
+
+# data
+data/
+
+
+# ai
+GEMINI.md
