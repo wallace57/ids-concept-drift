@@ -47,7 +47,6 @@ source venv/bin/activate
 pip install -r requirements.txt
 # Cho ARF và notebooks:
 pip install river notebook
-# Cho replay_cl.py (continual learning với replay buffer):
 pip install torch
 ```
 
@@ -72,14 +71,11 @@ Script tải `KDDTrain+.txt` và `KDDTest+.txt` từ [GitHub NSL-KDD](https://gi
 ### Bước 5: Chạy
 
 **Workflow chính (Notebooks):**
-- Mở và chạy theo thứ tự: `00_eda.ipynb` → `01_stimulate_CF_full.ipynb` → `02_stimulate_CF_phases.ipynb` → `03_solution*.ipynb`
+- Mở và chạy theo thứ tự: `00_eda.ipynb` → `01_stimulate_CF_full.ipynb` → `02_stimulate_CF_phases.ipynb` → `03_solution_ARFs.ipynb`
 
-**Scripts:**
+**Scripts phụ:**
 ```bash
-# Continual learning với replay buffer (PyTorch)
 python replay_cl.py
-
-# ARF với River (trong thư mục exp/)
 python exp/ids_concept_drift_ARF_new_v2_river_full.py
 ```
 
@@ -91,8 +87,7 @@ ids-concept-drift/
 ├── 00_eda.ipynb              # EDA NSL-KDD, so sánh label mapping
 ├── 01_stimulate_CF_full.ipynb   # Task 01: Drift toàn cục – chứng minh suy giảm IDS tĩnh
 ├── 02_stimulate_CF_phases.ipynb # Task 02: Catastrophic forgetting theo phases
-├── 03_solution.ipynb         # Task 03: ARF solution (basic)
-├── 03_solution_ARFs.ipynb    # Task 03: ARF variants
+├── 03_solution_ARFs.ipynb       # Task 03: ARF variants
 ├── 03_solution_improved.ipynb   # Task 03: ARF improved (logging, cấu trúc rõ ràng)
 │
 ├── replay_cl.py              # Continual learning: Baseline vs Replay Buffer (PyTorch)
@@ -114,14 +109,8 @@ ids-concept-drift/
 │   └── README.md
 │
 ├── archive/
-│   └── results/              # Kết quả experiments (plots, CSV)
+│   └── results/              # Kết quả experiments cũ (plots, CSV)
 │
-├── .cursor/
-│   ├── context/              # Tài liệu context cho AI assistant
-│   │   ├── 00-project-overview.md
-│   │   ├── EDA_NSL_KDD_Report.md
-│   │   └── ...
-│   └── instructions/
 │
 └── .gitignore
 ```
@@ -195,13 +184,3 @@ pip install torch
 ### NSL-KDD
 - **Official**: https://www.unb.ca/cic/datasets/nsl.html
 - **GitHub**: https://github.com/thinline72/nsl-kdd
-
-### Context files
-Tài liệu trong `.cursor/context/` hỗ trợ AI assistant:
-- `00-project-overview.md` – Tổng quan dự án
-- `EDA_NSL_KDD_Report.md` – Báo cáo EDA NSL-KDD
-- `02-source-files.md`, `03-data-flow.md`, v.v.
-
----
-
-**Good luck! 🚀**
