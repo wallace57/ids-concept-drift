@@ -1,8 +1,8 @@
 ## BTQT - Mô phỏng sự suy giảm mô hình IDS và đề xuất khắc phục trước Concept drift của NSL-KDD
 
-- **Notebook 00 & 01** phản ánh yêu cầu của bài tập 01 trong slide
-- **Notebook 02** phản ánh yêu cầu bài tập 02 trong slide
-- **Notebook 03** phản ánh yêu cầu bài tập 03 trong slide
+- **Notebook 00 & 01** phản ánh yêu cầu của bài tập 01 trong slide (`00_eda.ipynb` và `01_stimulate_CF_full.ipynb`)
+- **Notebook 02** phản ánh yêu cầu bài tập 02 trong slide (`02_stimulate_CF_phases.ipynb`)
+- **Notebook 03** phản ánh yêu cầu bài tập 03 trong slide (`03_solution_ARFs.ipynb`)
 
 ## References
 
